@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelGenix - Complete Travel Booking Platform</title>
+    Bootstrap CSS
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #home {
+        background-image: url(image/airplane.png);
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.5s ease;
+        }
+
+        #home::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        }
+
+        #home:hover::before {
+        opacity: 1;
+        }
+
+        #home .container {
+        position: relative;
+        z-index: 10;
+        transform: scale(1);
+        transition: transform 0.5s ease;
+        }
+
+        #home:hover .container {
+        transform: scale(1.05);
+        }
+
+        #home h1 {
+        transition: all 0.5s ease;
+        display: inline-block;
+        }
+
+        #home h1:hover {
+        color: var(--secondary-color);
+        transform: scale(1.05);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #home .lead {
+        transition: all 0.5s ease;
+        }
+
+        #home .lead:hover {
+        color: var(--primary-color);
+        transform: translateX(10px);
+        }
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --dark-overlay: rgba(0,0,0,0.6);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7f9;
+        }
+
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand img {
+            max-height: 50px;
+            margin-right: 10px;
+        }
+
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .footer {
+            background-color: #333;
+            color: white;
+            padding: 50px 0;
+        }
+
+        /* Individual Page Styles */
+        #flights-page .flight-search,
+        #hotels-page .hotel-search,
+        #cars-page .car-search,
+        #buses-page .bus-search {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#home">
+                <img src="image/travelLogo.jpg" alt="TravelGenix Logo" class="d-inline-block align-text-top">TravelGenix</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="bookingDropdown" role="button" data-bs-toggle="dropdown">
+                            Bookings
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="flightBooking.html">Flights</a></li>
+                            <li><a class="dropdown-item" href="hotelBooking.html">Hotels</a></li>
+                            <li><a class="dropdown-item" href="carBooking.html">Car Rentals</a></li>
+                            <li><a class="dropdown-item" href="busBooking.html">Bus Travels</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="Login.html">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-primary ms-2" href="Registration.html">Register</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Page -->
+    <section id="home" class="vh-100 d-flex align-items-center" style="background-image: url(image/airplane.png);">
+        <div class="container text-center text-white">
+            <h1 class="display-4 mb-4"><b>Explore the World with TravelGenix</b></h1>
+            <h3 class="lead mb-5">Your one-stop platform for seamless travel experiences</h3>
+            
+    </section>
+
+    <!-- About Page -->
+    <section id="about" class="container py-5">
+        <div class="section-header">
+            <h2>About TravelGenix</h2>
+            <p>Your trusted travel companion</p>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="service-card">
+                    <h4>Our Mission</h4>
+                    <p>To simplify travel booking and help you explore the world with ease and confidence.</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="service-card">
+                    <h4>Why Choose Us</h4>
+                    <ul>
+                        <li>Best Price Guarantee</li>
+                        <li>24/7 Customer Support</li>
+                        <li>Wide Range of Services</li>
+                        <li>Secure Booking Platform</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Page -->
+    <section id="contact" class="container py-5 bg-light">
+        <div class="section-header">
+            <h2>Contact Us</h2>
+            <p>Get in touch with our support team</p>
+        </div>
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <form>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" placeholder="Your Name">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" placeholder="Your Email">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Message</label>
+                            <textarea class="form-control" rows="5" placeholder="Your Message"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button class="btn btn-primary w-100">Send Message</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>TravelGenix</h5>
+                    <p>Your global travel companion, connecting you to amazing experiences worldwide.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#home" class="text-white">Home</a></li>
+                        <li><a href="#flights" class="text-white">Flights</a></li>
+                        <li><a href="#hotels" class="text-white">Hotels</a></li>
+                        <li><a href="#about" class="text-white">About</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact Info</h5>
+                    <p>Email: support@wanderhub.com</p>
+                    <p>Phone: +1 (800) TRAVEL-NOW</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // Form submission handling
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    alert('Booking functionality will be implemented in full version');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
