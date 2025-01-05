@@ -1,0 +1,133 @@
+# TravelGenix - Online Travel Booking System
+
+## Project Overview
+TravelGenix is a comprehensive travel booking platform built using Spring Boot that allows users to book flights, hotels, cars, and bus tickets. The system provides a secure and user-friendly interface for managing travel reservations.
+
+## Technical Architecture
+
+### Backend Technology Stack
+- Java 17
+- Spring Boot 3.x
+- Spring Data JPA
+- Spring Security
+- JUnit 5
+- Mockito
+- Maven
+- MySQL Database
+
+### Key Features
+1. User Management
+   - Registration and Authentication
+   - Profile Management
+   - Booking History
+
+2. Booking Management
+   - Flight Bookings
+   - Hotel Reservations
+   - Car Rentals
+   - Bus Tickets
+   - Booking Confirmation
+   - Cancellation Handling
+
+### Database Schema
+The system uses a relational database with the following key tables:
+- users: Stores user information
+- bookings: Maintains booking records
+- payment_transactions: Tracks payment information
+
+## API Documentation
+
+### User Management APIs
+```
+POST /api/users/register
+POST /api/users/login
+GET /api/users/profile
+PUT /api/users/profile
+```
+
+### Booking APIs
+```
+POST /api/bookings
+GET /api/bookings/{id}
+GET /api/bookings/user/{userId}
+DELETE /api/bookings/{id}
+```
+
+## Implementation Details
+
+### Annotations Used
+1. JPA Annotations
+   - @Entity
+   - @Table
+   - @Id
+   - @GeneratedValue
+   - @Column
+   - @ManyToOne
+   - @JoinColumn
+
+2. Spring Annotations
+   - @Service
+   - @Repository
+   - @RestController
+   - @Autowired
+   - @Transactional
+   - @RequestMapping
+
+3. Validation Annotations
+   - @NotNull
+   - @NotBlank
+   - @Email
+   - @Size
+
+### Unit Testing
+The service layer is thoroughly tested using JUnit 5 and Mockito:
+- BookingServiceTest: Tests booking creation, retrieval, and cancellation
+- UserServiceTest: Tests user registration and authentication
+- Coverage target: Minimum 80% for service layer
+
+## Deployment Guide
+
+### Prerequisites
+1. JDK 17 or higher
+2. Maven 3.8+
+3. MySQL 8.0+
+
+### Configuration
+1. Database configuration in application.properties:
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/travelgenix
+spring.datasource.username=root
+spring.datasource.password=root
+spring.jpa.hibernate.ddl-auto=update
+```
+
+### Building and Running
+1. Build the project:
+```bash
+mvn clean install
+```
+
+2. Run the application:
+```bash
+java -jar target/travelgenix-0.0.1-SNAPSHOT.jar
+```
+
+## Security Considerations
+- Password encryption using BCrypt
+- JWT-based authentication
+- Input validation and sanitization
+- CORS configuration
+- Rate limiting for API endpoints
+
+## Future Enhancements
+1. Integration with external booking APIs
+2. Real-time flight/hotel availability checking
+3. Advanced search filters
+4. Payment gateway integration
+5. Mobile application development
+
+## Support and Maintenance
+- Regular security updates
+- Performance monitoring
+- Database backup strategy
+- Customer support system integration
