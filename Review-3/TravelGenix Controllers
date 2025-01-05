@@ -1,0 +1,122 @@
+// FlightController.java
+package com.travelgenix.controller;
+
+@RestController
+@RequestMapping("/api/flights")
+@Validated
+public class FlightController {
+    private final FlightService flightService;
+
+    @Autowired
+    public FlightController(FlightService flightService) {
+        this.flightService = flightService;
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<List<FlightDTO>> searchFlights(@Valid @RequestBody FlightSearchRequest request) {
+        return ResponseEntity.ok(flightService.searchFlights(request));
+    }
+
+    @PostMapping("/book")
+    public ResponseEntity<BookingResponse> bookFlight(@Valid @RequestBody FlightBookingRequest request) {
+        return ResponseEntity.ok(flightService.bookFlight(request));
+    }
+
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<BookingResponse> getFlightBooking(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(flightService.getBooking(bookingId));
+    }
+}
+
+// HotelController.java
+@RestController
+@RequestMapping("/api/hotels")
+@Validated
+public class HotelController {
+    private final HotelService hotelService;
+
+    @Autowired
+    public HotelController(HotelService hotelService) {
+        this.hotelService = hotelService;
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<List<HotelDTO>> searchHotels(@Valid @RequestBody HotelSearchRequest request) {
+        return ResponseEntity.ok(hotelService.searchHotels(request));
+    }
+
+    @PostMapping("/book")
+    public ResponseEntity<BookingResponse> bookHotel(@Valid @RequestBody HotelBookingRequest request) {
+        return ResponseEntity.ok(hotelService.bookHotel(request));
+    }
+}
+
+// UserController.java
+@RestController
+@RequestMapping("/api/users")
+@Validated
+public class UserController {
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
+        return ResponseEntity.ok(userService.registerUser(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<JwtResponse> loginUser(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(userService.loginUser(request));
+    }
+
+    @GetMapping("/bookings")
+    public ResponseEntity<List<BookingResponse>> getUserBookings(
+        @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(userService.getUserBookings(token));
+    }
+}
+
+// Request/Response DTOs
+package com.travelgenix.dto;
+
+public class FlightSearchRequest {
+    @NotBlank(message = "Source city is required")
+    private String sourceCity;
+
+    @NotBlank(message = "Destination city is required")
+    private String destinationCity;
+
+    @NotNull(message = "Travel date is required")
+    @Future(message = "Travel date must be in the future")
+    private LocalDate travelDate;
+
+    @Min(value = 1, message = "Minimum 1 passenger required")
+    @Max(value = 9, message = "Maximum 9 passengers allowed")
+    private int passengers;
+}
+
+public class FlightBookingRequest {
+    @NotNull(message = "Flight ID is required")
+    private Long flightId;
+
+    @NotNull(message = "Passenger details are required")
+    @Size(min = 1, max = 9, message = "Invalid number of passengers")
+    private List<PassengerDetails> passengers;
+
+    @NotBlank(message = "Seat class is required")
+    @Pattern(regexp = "^(ECONOMY|BUSINESS|FIRST)$", message = "Invalid seat class")
+    private String seatClass;
+}
+
+public class BookingResponse {
+    private Long bookingId;
+    private String bookingStatus;
+    private LocalDateTime bookingDate;
+    private BigDecimal totalAmount;
+    private String paymentStatus;
+    private BookingDetails details;
+}

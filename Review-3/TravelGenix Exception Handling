@@ -1,0 +1,194 @@
+// 1. Custom Exceptions
+package com.travelgenix.exception;
+
+// ResourceNotFoundException.java
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+
+    public ResourceNotFoundException(String resource, String field, String value) {
+        super(String.format("%s not found with %s: %s", resource, field, value));
+    }
+}
+
+// BookingException.java
+public class BookingException extends RuntimeException {
+    private final String errorCode;
+
+    public BookingException(String message, String errorCode) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+}
+
+// InvalidRequestException.java
+public class InvalidRequestException extends RuntimeException {
+    private final Map<String, String> errors;
+
+    public InvalidRequestException(String message, Map<String, String> errors) {
+        super(message);
+        this.errors = errors;
+    }
+
+    public Map<String, String> getErrors() {
+        return errors;
+    }
+}
+
+// PaymentFailedException.java
+public class PaymentFailedException extends RuntimeException {
+    private final String transactionId;
+
+    public PaymentFailedException(String message, String transactionId) {
+        super(message);
+        this.transactionId = transactionId;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+}
+
+// 2. Error Response Models
+// ErrorResponse.java
+@Data
+@AllArgsConstructor
+public class ErrorResponse {
+    private LocalDateTime timestamp;
+    private int status;
+    private String error;
+    private String message;
+    private String path;
+    private Map<String, String> details;
+}
+
+// ValidationErrorResponse.java
+@Data
+@AllArgsConstructor
+public class ValidationErrorResponse {
+    private LocalDateTime timestamp;
+    private int status;
+    private String message;
+    private Map<String, String> errors;
+}
+
+// 3. Global Exception Handler
+@ControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            LocalDateTime.now(),
+            HttpStatus.NOT_FOUND.value(),
+            "Not Found",
+            ex.getMessage(),
+            request.getDescription(false),
+            null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(BookingException.class)
+    public ResponseEntity<ErrorResponse> handleBookingException(
+            BookingException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            LocalDateTime.now(),
+            HttpStatus.BAD_REQUEST.value(),
+            "Booking Error",
+            ex.getMessage(),
+            request.getDescription(false),
+            Map.of("errorCode", ex.getErrorCode())
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(PaymentFailedException.class)
+    public ResponseEntity<ErrorResponse> handlePaymentFailedException(
+            PaymentFailedException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            LocalDateTime.now(),
+            HttpStatus.PAYMENT_REQUIRED.value(),
+            "Payment Failed",
+            ex.getMessage(),
+            request.getDescription(false),
+            Map.of("transactionId", ex.getTransactionId())
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            errors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        ValidationErrorResponse errorResponse = new ValidationErrorResponse(
+            LocalDateTime.now(),
+            HttpStatus.BAD_REQUEST.value(),
+            "Validation Failed",
+            errors
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGlobalException(
+            Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            LocalDateTime.now(),
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "Internal Server Error",
+            "An unexpected error occurred",
+            request.getDescription(false),
+            null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+// 4. Exception Usage Example
+@Service
+public class BookingServiceImpl implements BookingService {
+    
+    @Override
+    public BookingResponse createBooking(BookingRequest request) {
+        // Validate flight availability
+        Flight flight = flightRepository.findById(request.getFlightId())
+            .orElseThrow(() -> new ResourceNotFoundException("Flight", "id", 
+                request.getFlightId().toString()));
+
+        // Check if seats are available
+        if (!flight.hasAvailableSeats(request.getPassengerCount())) {
+            throw new BookingException(
+                "No available seats for the selected flight",
+                "SEATS_UNAVAILABLE"
+            );
+        }
+
+        // Process payment
+        try {
+            processPayment(request.getPaymentDetails());
+        } catch (Exception e) {
+            throw new PaymentFailedException(
+                "Payment processing failed",
+                request.getPaymentDetails().getTransactionId()
+            );
+        }
+
+        // Create booking logic...
+    }
+}

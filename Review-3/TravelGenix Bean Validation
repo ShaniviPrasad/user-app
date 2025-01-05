@@ -1,0 +1,195 @@
+// 1. User Related Validations
+package com.travelgenix.validation;
+
+// UserRegistrationRequest.java
+@Data
+@Builder
+public class UserRegistrationRequest {
+    @NotBlank(message = "Email is required")
+    @Email(message = "Please provide a valid email address")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    @Pattern(
+        regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
+        message = "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character"
+    )
+    private String password;
+
+    @NotBlank(message = "First name is required")
+    @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
+    private String lastName;
+
+    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Please provide a valid phone number")
+    private String phoneNumber;
+}
+
+// 2. Flight Booking Validations
+// FlightBookingRequest.java
+@Data
+@Builder
+public class FlightBookingRequest {
+    @NotNull(message = "Flight ID is required")
+    private Long flightId;
+
+    @NotNull(message = "Travel date is required")
+    @Future(message = "Travel date must be in the future")
+    private LocalDate travelDate;
+
+    @Valid
+    @NotEmpty(message = "At least one passenger is required")
+    @Size(max = 9, message = "Maximum 9 passengers allowed per booking")
+    private List<PassengerDetails> passengers;
+
+    @NotNull(message = "Seat class is required")
+    @ValidSeatClass(message = "Invalid seat class. Must be one of: ECONOMY, BUSINESS, FIRST")
+    private String seatClass;
+
+    @Valid
+    @NotNull(message = "Payment details are required")
+    private PaymentDetails paymentDetails;
+}
+
+// PassengerDetails.java
+@Data
+@Builder
+public class PassengerDetails {
+    @NotBlank(message = "Passenger name is required")
+    @Pattern(
+        regexp = "^[a-zA-Z ]{2,50}$",
+        message = "Name must contain only letters and spaces, between 2 and 50 characters"
+    )
+    private String name;
+
+    @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past")
+    private LocalDate dateOfBirth;
+
+    @NotBlank(message = "Gender is required")
+    @Pattern(regexp = "^(MALE|FEMALE|OTHER)$", message = "Invalid gender")
+    private String gender;
+
+    @Pattern(
+        regexp = "^[A-Z0-9]{6,15}$",
+        message = "Invalid passport number format"
+    )
+    private String passportNumber;
+}
+
+// 3. Custom Validators
+// ValidSeatClass.java
+@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = SeatClassValidator.class)
+public @interface ValidSeatClass {
+    String message() default "Invalid seat class";
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
+}
+
+// SeatClassValidator.java
+public class SeatClassValidator implements ConstraintValidator<ValidSeatClass, String> {
+    private static final Set<String> VALID_SEAT_CLASSES = 
+        Set.of("ECONOMY", "BUSINESS", "FIRST");
+
+    @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+        return VALID_SEAT_CLASSES.contains(value.toUpperCase());
+    }
+}
+
+// 4. Payment Validation
+// PaymentDetails.java
+@Data
+@Builder
+public class PaymentDetails {
+    @NotBlank(message = "Card number is required")
+    @CreditCardNumber(message = "Invalid credit card number")
+    private String cardNumber;
+
+    @NotBlank(message = "Card holder name is required")
+    @Pattern(
+        regexp = "^[a-zA-Z ]{2,50}$",
+        message = "Card holder name must contain only letters and spaces"
+    )
+    private String cardHolderName;
+
+    @NotBlank(message = "Expiry date is required")
+    @Pattern(
+        regexp = "^(0[1-9]|1[0-2])/([0-9]{2})$",
+        message = "Expiry date must be in MM/YY format"
+    )
+    private String expiryDate;
+
+    @NotBlank(message = "CVV is required")
+    @Pattern(regexp = "^[0-9]{3,4}$", message = "Invalid CVV")
+    private String cvv;
+}
+
+// 5. Cross-Field Validation
+// BookingDateValidator.java
+@Component
+public class BookingDateValidator {
+    public void validateBookingDates(LocalDate checkIn, LocalDate checkOut) {
+        if (checkIn.isAfter(checkOut)) {
+            throw new InvalidBookingException(
+                "Check-out date must be after check-in date",
+                Map.of(
+                    "checkIn", checkIn.toString(),
+                    "checkOut", checkOut.toString()
+                )
+            );
+        }
+
+        if (checkIn.isBefore(LocalDate.now())) {
+            throw new InvalidBookingException(
+                "Check-in date cannot be in the past",
+                Map.of("checkIn", checkIn.toString())
+            );
+        }
+    }
+}
+
+// 6. Validation Groups
+public interface BasicValidation {}
+public interface AdvancedValidation {}
+
+// Example usage with groups
+@Data
+public class HotelBookingRequest {
+    @NotNull(groups = {BasicValidation.class})
+    private Long hotelId;
+
+    @NotNull(groups = {BasicValidation.class})
+    @Future(groups = {BasicValidation.class})
+    private LocalDate checkIn;
+
+    @NotNull(groups = {BasicValidation.class})
+    @Future(groups = {BasicValidation.class})
+    private LocalDate checkOut;
+
+    @Valid
+    @NotNull(groups = {AdvancedValidation.class})
+    private PaymentDetails paymentDetails;
+}
+
+// 7. Validation Aspect
+@Aspect
+@Component
+@Slf4j
+public class ValidationLoggingAspect {
+    @Before("@annotation(javax.validation.Valid)")
+    public void logValidation(JoinPoint joinPoint) {
+        log.info("Validating request: {} with parameters: {}", 
+            joinPoint.getSignature().getName(), 
+            joinPoint.getArgs()
+        );
+    }
+}

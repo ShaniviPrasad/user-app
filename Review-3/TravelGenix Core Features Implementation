@@ -1,0 +1,235 @@
+// 1. Service Interfaces
+package com.travelgenix.service;
+
+// FlightService.java
+public interface FlightService {
+    FlightSearchResponse searchFlights(FlightSearchRequest request);
+    BookingResponse bookFlight(FlightBookingRequest request);
+    List<FlightDTO> getAvailableFlights(String source, String destination, LocalDate date);
+    void cancelFlight(Long bookingId);
+}
+
+// HotelService.java
+public interface HotelService {
+    HotelSearchResponse searchHotels(HotelSearchRequest request);
+    BookingResponse bookHotel(HotelBookingRequest request);
+    void cancelHotel(Long bookingId);
+}
+
+// 2. Service Implementations
+// FlightServiceImpl.java
+@Service
+@Transactional
+@Slf4j
+public class FlightServiceImpl implements FlightService {
+    private final FlightRepository flightRepository;
+    private final BookingRepository bookingRepository;
+    private final UserRepository userRepository;
+    private final PaymentService paymentService;
+
+    @Autowired
+    public FlightServiceImpl(
+            FlightRepository flightRepository,
+            BookingRepository bookingRepository,
+            UserRepository userRepository,
+            PaymentService paymentService) {
+        this.flightRepository = flightRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.paymentService = paymentService;
+    }
+
+    @Override
+    public FlightSearchResponse searchFlights(FlightSearchRequest request) {
+        log.info("Searching flights for request: {}", request);
+        
+        List<Flight> availableFlights = flightRepository.findBySourceAndDestinationAndDate(
+            request.getSource(),
+            request.getDestination(),
+            request.getDate()
+        );
+
+        return FlightSearchResponse.builder()
+            .flights(availableFlights.stream()
+                .map(this::mapToFlightDTO)
+                .collect(Collectors.toList()))
+            .totalResults(availableFlights.size())
+            .build();
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse bookFlight(FlightBookingRequest request) {
+        log.info("Processing flight booking: {}", request);
+        
+        // Validate flight availability
+        Flight flight = flightRepository.findById(request.getFlightId())
+            .orElseThrow(() -> new ResourceNotFoundException("Flight not found"));
+
+        // Check seat availability
+        if (!flight.hasAvailableSeats(request.getPassengerCount())) {
+            throw new BookingException("No available seats", "SEATS_UNAVAILABLE");
+        }
+
+        // Calculate total price
+        BigDecimal totalPrice = calculateTotalPrice(flight, request);
+
+        // Process payment
+        PaymentResponse paymentResponse = paymentService.processPayment(
+            request.getPaymentDetails(), 
+            totalPrice
+        );
+
+        // Create booking
+        Booking booking = Booking.builder()
+            .flight(flight)
+            .user(request.getUser())
+            .passengers(request.getPassengers())
+            .status(BookingStatus.CONFIRMED)
+            .totalAmount(totalPrice)
+            .paymentId(paymentResponse.getPaymentId())
+            .build();
+
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Update flight seats
+        flight.updateAvailableSeats(request.getPassengerCount());
+        flightRepository.save(flight);
+
+        return mapToBookingResponse(savedBooking);
+    }
+}
+
+// 3. Repositories
+// FlightRepository.java
+@Repository
+public interface FlightRepository extends JpaRepository<Flight, Long> {
+    List<Flight> findBySourceAndDestinationAndDate(
+        String source, 
+        String destination, 
+        LocalDate date
+    );
+
+    @Query("SELECT f FROM Flight f WHERE f.source = :source " +
+           "AND f.destination = :destination " +
+           "AND f.departureDate >= :date " +
+           "AND f.availableSeats >= :passengers")
+    List<Flight> searchAvailableFlights(
+        @Param("source") String source,
+        @Param("destination") String destination,
+        @Param("date") LocalDate date,
+        @Param("passengers") int passengers
+    );
+}
+
+// BookingRepository.java
+@Repository
+public interface BookingRepository extends JpaRepository<Booking, Long> {
+    List<Booking> findByUser_Id(Long userId);
+    
+    @Query("SELECT b FROM Booking b WHERE b.user.id = :userId AND b.status = :status")
+    List<Booking> findUserBookingsByStatus(
+        @Param("userId") Long userId,
+        @Param("status") BookingStatus status
+    );
+}
+
+// 4. Entity Classes
+// Flight.java
+@Entity
+@Table(name = "flights")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Flight {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String flightNumber;
+    private String source;
+    private String destination;
+    private LocalDateTime departureTime;
+    private LocalDateTime arrivalTime;
+    private Integer totalSeats;
+    private Integer availableSeats;
+    private BigDecimal basePrice;
+
+    @Enumerated(EnumType.STRING)
+    private FlightStatus status;
+
+    @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL)
+    private List<Booking> bookings;
+
+    public boolean hasAvailableSeats(int requestedSeats) {
+        return availableSeats >= requestedSeats;
+    }
+
+    public void updateAvailableSeats(int bookedSeats) {
+        this.availableSeats -= bookedSeats;
+    }
+}
+
+// Booking.java
+@Entity
+@Table(name = "bookings")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Booking {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "flight_id", nullable = false)
+    private Flight flight;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "booking_id")
+    private List<Passenger> passengers;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private BookingStatus status;
+
+    private LocalDateTime bookingDate;
+    private BigDecimal totalAmount;
+    private String paymentId;
+
+    @PrePersist
+    protected void onCreate() {
+        bookingDate = LocalDateTime.now();
+    }
+}
+
+// 5. Business Logic Utilities
+// PriceCalculator.java
+@Component
+public class PriceCalculator {
+    public BigDecimal calculateFlightPrice(Flight flight, FlightBookingRequest request) {
+        BigDecimal basePrice = flight.getBasePrice();
+        BigDecimal classMultiplier = getSeatClassMultiplier(request.getSeatClass());
+        BigDecimal seasonalMultiplier = getSeasonalMultiplier(flight.getDepartureTime());
+        
+        return basePrice
+            .multiply(classMultiplier)
+            .multiply(seasonalMultiplier)
+            .multiply(BigDecimal.valueOf(request.getPassengerCount()))
+            .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal getSeatClassMultiplier(SeatClass seatClass) {
+        return switch (seatClass) {
+            case ECONOMY -> BigDecimal.ONE;
+            case BUSINESS -> new BigDecimal("2.5");
+            case FIRST -> new BigDecimal("4.0");
+        };
+    }
+}
