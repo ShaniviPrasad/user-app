@@ -1,0 +1,95 @@
+// src/test/java/com/travelgenix/service/BookingServiceTest.java
+package com.travelgenix.service;
+
+import com.travelgenix.model.Booking;
+import com.travelgenix.model.User;
+import com.travelgenix.dto.BookingDTO;
+import com.travelgenix.repository.BookingRepository;
+import com.travelgenix.repository.UserRepository;
+import com.travelgenix.service.impl.BookingServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
+public class BookingServiceTest {
+    @Mock
+    private BookingRepository bookingRepository;
+    
+    @Mock
+    private UserRepository userRepository;
+    
+    private BookingService bookingService;
+    
+    @BeforeEach
+    void setUp() {
+        bookingService = new BookingServiceImpl(bookingRepository, userRepository);
+    }
+    
+    @Test
+    void createBooking_Success() {
+        // Arrange
+        User user = new User();
+        user.setId(1L);
+        user.setName("Test User");
+        
+        BookingDTO bookingDTO = new BookingDTO();
+        bookingDTO.setUserId(1L);
+        bookingDTO.setBookingType("FLIGHT");
+        bookingDTO.setSource("New York");
+        bookingDTO.setDestination("London");
+        bookingDTO.setTravelDate(LocalDateTime.now().plusDays(7));
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArguments()[0]);
+        
+        // Act
+        Booking result = bookingService.createBooking(bookingDTO);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals("CONFIRMED", result.getStatus());
+        assertEquals(user, result.getUser());
+        verify(bookingRepository).save(any(Booking.class));
+    }
+    
+    @Test
+    void getBookingById_Success() {
+        // Arrange
+        Booking booking = new Booking();
+        booking.setId(1L);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        
+        // Act
+        Booking result = bookingService.getBookingById(1L);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+    }
+    
+    @Test
+    void cancelBooking_Success() {
+        // Arrange
+        Booking booking = new Booking();
+        booking.setId(1L);
+        booking.setStatus("CONFIRMED");
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArguments()[0]);
+        
+        // Act
+        bookingService.cancelBooking(1L);
+        
+        // Assert
+        verify(bookingRepository).save(any(Booking.class));
+        assertEquals("CANCELLED", booking.getStatus());
+    }
+}
