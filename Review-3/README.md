@@ -3,8 +3,6 @@
 ## Overview
 TravelGenix is a comprehensive travel booking platform built with Spring Boot that allows users to book flights, hotels, and manage their travel arrangements seamlessly. This project implements a robust backend system with modern architecture and best practices.
 
-![TravelGenix Banner](image/travelLogo.jpg)
-
 ## 🌟 Key Features
 - **Flight Booking System**
   - Search available flights
